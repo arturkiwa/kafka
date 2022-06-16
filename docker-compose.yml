@@ -1,0 +1,123 @@
+version: '2'
+services:
+  kafka-ui:
+    image: provectuslabs/kafka-ui
+    container_name: kafka-ui
+#    ports:
+#      - "8585:8080"
+    restart: always
+    networks:
+      - traefik-external
+      - kafka-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.kafka.middlewares=secured"
+      - "traefik.http.routers.kafka.rule=Host(`kafkaui.artbit.com.pl`)"
+      - "traefik.http.routers.kafka.entrypoints=websecure"
+      - "traefik.http.services.kafka.loadbalancer.server.port=8080"
+      - "traefik.http.routers.kafka.tls=true"
+      - "traefik.http.routers.kafka.tls.certresolver=${TLSRESOLVER}"
+      - "traefik.docker.network=traefik-external"
+    environment:
+      - KAFKA_CLUSTERS_0_NAME=local
+      - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka-0:9092
+      - KAFKA_CLUSTERS_0_ZOOKEEPER=zookeeper:2181
+      - AUTH_TYPE=LOGIN_FORM
+      - SPRING_SECURITY_USER_NAME=admin
+      - SPRING_SECURITY_USER_PASSWORD=Jcnntctwmzb19720923
+
+  zookeeper:
+    image: docker.io/bitnami/zookeeper:3.8
+#    ports:
+#      - "2181"
+    networks:
+      - kafka-network
+    environment:
+      - ALLOW_ANONYMOUS_LOGIN=yes
+    volumes:
+      - zookeeper_data:/bitnami/zookeeper
+
+  kafka-0:
+    image: docker.io/bitnami/kafka:3.2
+#    ports:
+#      - "9092"
+    networks:
+      - kafka-network
+    environment:
+      - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181
+      - KAFKA_CFG_BROKER_ID=0
+      - ALLOW_PLAINTEXT_LISTENER=yes
+    volumes:
+      - kafka_0_data:/bitnami/kafka
+      - ./kafka-config/0/:/bitnami/kafka/config/
+    depends_on:
+      - zookeeper
+
+  kafka-1:
+    image: docker.io/bitnami/kafka:3.2
+#    ports:
+#      - "9092"
+    networks:
+      - kafka-network
+    environment:
+      - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181
+      - KAFKA_CFG_BROKER_ID=1
+      - ALLOW_PLAINTEXT_LISTENER=yes
+    volumes:
+      - kafka_1_data:/bitnami/kafka
+      - ./kafka-config/1/:/bitnami/kafka/config/
+    depends_on:
+      - zookeeper
+
+  kafka-2:
+    image: docker.io/bitnami/kafka:3.2
+#    ports:
+#      - "9092"
+    networks:
+      - kafka-network
+    environment:
+      - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181
+      - KAFKA_CFG_BROKER_ID=2
+      - ALLOW_PLAINTEXT_LISTENER=yes
+    volumes:
+      - kafka_2_data:/bitnami/kafka
+      - ./kafka-config/2/:/bitnami/kafka/config/
+    depends_on:
+      - zookeeper
+
+  kafka-3:
+    image: docker.io/bitnami/kafka:3.2
+#    ports:
+#      - "9092"
+    networks:
+      - kafka-network
+    environment:
+      - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181
+      - KAFKA_CFG_BROKER_ID=3
+      - ALLOW_PLAINTEXT_LISTENER=yes
+    volumes:
+      - kafka_3_data:/bitnami/kafka
+      - ./kafka-config/3/:/bitnami/kafka/config/
+    depends_on:
+      - zookeeper
+
+volumes:
+  zookeeper_data:
+    driver: local
+  kafka_0_data:
+    driver: local
+  kafka_1_data:
+    driver: local
+  kafka_2_data:
+    driver: local
+  kafka_3_data:
+    driver: local
+
+networks:
+  traefik-external:
+    name: ${TRAEFIK_NETWORK_NAME}
+    external: true
+    driver: bridge
+  kafka-network:
+    name: ${INTERNAL_NETWORK_NAME}
+    driver: bridge
